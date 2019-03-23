@@ -80,12 +80,20 @@
     record-mode?
     get-buffer!))
 
+;; KeyEvent -> Bool
+(define (key-event-toggles? evt)
+  (and (send evt get-alt-down)
+       (member (send evt get-key-code) '(#\t #\†))
+       #t))
+
 (define off-delegate%
   (class* object% (delegate<%>)
     [init-field sup]
     (define/public (enable!) (void))
     (define/public (handle-char evt)
-      (send sup super-on-local-char evt))
+      (if (key-event-toggles? evt)
+          (send sup toggle-talk-typer!)
+          (send sup super-on-local-char evt)))
     (define/public (insert-mode?) #f)
     (define/public (record-mode?) #f)
     (define/public (get-buffer!) (void))
@@ -108,8 +116,10 @@
         (get-buffer!)))
 
     (define/public (handle-char event)
-      (unless (null? talk-next-buffer)
-        (do-key event)))
+      (if (key-event-toggles? event)
+          (send sup toggle-talk-typer!)
+          (unless (null? talk-next-buffer)
+            (do-key event))))
 
     (define/public (insert-mode?) #t)
     (define/public (record-mode?) #f)
